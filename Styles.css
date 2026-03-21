@@ -1,0 +1,65 @@
+/* 核心：将网页背景彻底设为透明，并隐藏默认边距 */
+body { 
+  background: transparent !important; 
+  margin: 0; 
+  padding: 0;
+  overflow: hidden; 
+}
+
+/* 核心：定义操作系统级别的拖拽区域 */
+.drag-region { -webkit-app-region: drag; }
+.no-drag { -webkit-app-region: no-drag; }
+
+/* ================= 极简苹果风滚动条 ================= */
+.custom-scrollbar {
+  scrollbar-gutter: stable both-edges;
+  will-change: scroll-position;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.custom-scrollbar::-webkit-scrollbar { 
+  width: 5px; 
+}
+.custom-scrollbar::-webkit-scrollbar-track { 
+  background: transparent; 
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb { 
+  background: rgba(156, 163, 175, 0.4); 
+  border-radius: 10px; 
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { 
+  background: rgba(156, 163, 175, 0.8); 
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* 滑动条样式优化 */
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  margin-top: -4px;
+  box-shadow: 0 2px 6px rgba(59,130,246,0.4);
+}
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 4px;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

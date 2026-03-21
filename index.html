@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskFlow</title>
+  
+  <script src="vendor/react.production.min.js"></script>
+  <script src="vendor/react-dom.production.min.js"></script>
+  <script src="vendor/babel.min.js"></script>
+  <script src="vendor/tailwindcss.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
+  
+  <link rel="stylesheet" href="Styles.css">
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="Icons.js"></script>
+  <script type="text/babel" src="ThemeColors.js"></script>
+  <script type="text/babel" src="Hooks.js"></script>
+  <script type="text/babel" src="Tasks.js"></script>
+  <script type="text/babel" src="Settings.js"></script>
+  <script type="text/babel" src="App.js"></script>
+  <script type="text/babel">
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+win-unpacked/
+window-pos.json
+备份/
+备份_最终版_修复显示问题/
+运行最稳定的版本/
