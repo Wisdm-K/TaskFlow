@@ -2,6 +2,23 @@
 
 轻量级桌面时间进度管理工具，实时追踪任务倒计时与进度。基于 Electron + React 构建。
 
+## 截图预览
+
+<table>
+  <tr>
+    <td align="center"><b>日间模式</b></td>
+    <td align="center"><b>夜间模式</b></td>
+    <td align="center"><b>设置页面</b></td>
+    <td align="center"><b>更多主题</b></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/light-mode.png" width="220" /></td>
+    <td><img src="screenshots/dark-mode.png" width="220" /></td>
+    <td><img src="screenshots/settings.png" width="220" /></td>
+    <td><img src="screenshots/theme-orange.png" width="220" /></td>
+  </tr>
+</table>
+
 ## 功能特性
 
 - **任务倒计时** - 实时显示截止日期任务的剩余天数、小时、分钟

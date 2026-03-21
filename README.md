@@ -2,6 +2,23 @@
 
 A lightweight desktop widget for tracking time-sensitive tasks with visual progress indicators. Built with Electron + React.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><b>Light Mode</b></td>
+    <td align="center"><b>Dark Mode</b></td>
+    <td align="center"><b>Settings</b></td>
+    <td align="center"><b>Theme (Orange)</b></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/light-mode.png" width="220" /></td>
+    <td><img src="screenshots/dark-mode.png" width="220" /></td>
+    <td><img src="screenshots/settings.png" width="220" /></td>
+    <td><img src="screenshots/theme-orange.png" width="220" /></td>
+  </tr>
+</table>
+
 ## Features
 
 - **Task Countdown** - Real-time countdown display for deadline-based tasks (days, hours, minutes)
