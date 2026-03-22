@@ -63,8 +63,9 @@ function createWindow() {
 
   win.loadFile(path.join(__dirname, 'index.html'));
 
-  // ================= 记住窗口位置 =================
+  // ================= 记住窗口位置 + 屏幕外弹回 =================
   const { screen } = require('electron');
+  const { ensureWindowInBounds } = require('./windowBounds');
   const posFile = path.join(app.getPath('userData'), 'window-pos.json');
 
   function isPositionVisible(x, y) {
@@ -73,6 +74,13 @@ function createWindow() {
       const b = d.bounds;
       return x >= b.x - 100 && x < b.x + b.width && y >= b.y - 100 && y < b.y + b.height;
     });
+  }
+
+  function applyBounceBackIfNeeded() {
+    const newPos = ensureWindowInBounds(win);
+    if (newPos) {
+      win.setPosition(newPos.x, newPos.y);
+    }
   }
 
   win.webContents.on('did-finish-load', () => {
@@ -84,11 +92,18 @@ function createWindow() {
         }
       } catch (e) {}
     }
+    applyBounceBackIfNeeded();
   });
   win.on('moved', () => {
+    const newPos = ensureWindowInBounds(win);
+    if (newPos) win.setPosition(newPos.x, newPos.y);
     const [x, y] = win.getPosition();
     fs.writeFileSync(posFile, JSON.stringify({ x, y }));
   });
+  win.on('show', () => applyBounceBackIfNeeded());
+
+  screen.on('display-added', () => applyBounceBackIfNeeded());
+  screen.on('display-removed', () => applyBounceBackIfNeeded());
 
   ipcMain.handle('get-window-position', () => {
     const [x, y] = win.getPosition();
