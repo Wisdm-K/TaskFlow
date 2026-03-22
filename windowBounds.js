@@ -5,8 +5,8 @@
  */
 const { screen } = require('electron');
 
-// 核心控制区域高度：头部 86px + 少量余量，确保拖动/设置等按钮在屏幕内即可
-const VISIBLE_HEIGHT = 120;
+// 核心控制区域高度：头部 86px + 余量，确保拖动/设置等按钮在屏幕内
+const VISIBLE_HEIGHT = 180;
 
 /**
  * 判断点 (px, py) 是否在任意显示器范围内
@@ -19,8 +19,8 @@ function isPointInAnyDisplay(px, py, displays) {
 }
 
 /**
- * 判断可见区域是否完全移出所有显示器
- * 仅检测顶部 VISIBLE_HEIGHT 像素，底部透明区域伸出屏幕不触发弹回
+ * 判断可见区域是否有任意部分超出所有显示器（上下左右任一方向）
+ * 任一角超出即触发弹回，确保核心控制区始终完整在屏幕内
  */
 function isVisiblePartOutside(x, y, width) {
   const displays = screen.getAllDisplays();
@@ -30,7 +30,8 @@ function isVisiblePartOutside(x, y, width) {
     [x, y + VISIBLE_HEIGHT],
     [x + width, y + VISIBLE_HEIGHT]
   ];
-  return corners.every(([px, py]) => !isPointInAnyDisplay(px, py, displays));
+  const allIn = corners.every(([px, py]) => isPointInAnyDisplay(px, py, displays));
+  return !allIn;
 }
 
 function clamp(val, min, max) {
