@@ -1,6 +1,6 @@
 {
   "name": "taskflow",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "TaskFlow - 桌面时间进度管理",
   "main": "main.js",
   "author": "",

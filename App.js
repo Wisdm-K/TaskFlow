@@ -135,9 +135,17 @@ function App() {
 
   // 鼠标穿透：面板外区域让操作系统级别的点击穿透到桌面
   const containerRef = useRef(null);
+  const hasModal = isAdding || isSettingsOpen || isClosing;
   useEffect(() => {
     let ignoring = false;
     const onMouseMove = (e) => {
+      if (hasModal) {
+        if (ignoring) {
+          ipcRenderer.send('set-ignore-mouse', false);
+          ignoring = false;
+        }
+        return;
+      }
       const el = containerRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
@@ -151,12 +159,21 @@ function App() {
         ignoring = true;
       }
     };
+    const onFocus = () => {
+      if (ignoring) {
+        ipcRenderer.send('set-ignore-mouse', false);
+        ignoring = false;
+      }
+    };
+    if (hasModal) ipcRenderer.send('set-ignore-mouse', false);
     document.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('focus', onFocus);
     return () => {
       document.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('focus', onFocus);
       if (ignoring) ipcRenderer.send('set-ignore-mouse', false);
     };
-  }, []);
+  }, [hasModal]);
 
   return (
     <div className="h-screen w-screen flex flex-col p-4 font-sans text-gray-800 dark:text-gray-100">
