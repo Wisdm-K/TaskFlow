@@ -67,46 +67,33 @@ function createWindow() {
 
   win.loadFile(path.join(__dirname, 'index.html'));
 
-  // ================= 记住窗口位置 + 屏幕外弹回 =================
-  const { ensureWindowInBounds } = require('./windowBounds');
+  // ================= 记住窗口位置 + 屏幕外弹回（几何逻辑见 windowBounds.js） =================
+  const {
+    snapWindowIntoBoundsIfNeeded,
+    isSavedPositionOnAnyDisplay,
+  } = require('./windowBounds');
   const posFile = path.join(app.getPath('userData'), 'window-pos.json');
-
-  function isPositionVisible(x, y) {
-    const displays = screen.getAllDisplays();
-    return displays.some(d => {
-      const b = d.bounds;
-      return x >= b.x - 100 && x < b.x + b.width && y >= b.y - 100 && y < b.y + b.height;
-    });
-  }
-
-  function applyBounceBackIfNeeded() {
-    const newPos = ensureWindowInBounds(win);
-    if (newPos) {
-      win.setPosition(newPos.x, newPos.y);
-    }
-  }
 
   win.webContents.on('did-finish-load', () => {
     if (fs.existsSync(posFile)) {
       try {
         const pos = JSON.parse(fs.readFileSync(posFile, 'utf8'));
-        if (isPositionVisible(pos.x, pos.y)) {
+        if (isSavedPositionOnAnyDisplay(pos.x, pos.y)) {
           win.setPosition(pos.x, pos.y);
         }
       } catch (e) {}
     }
-    applyBounceBackIfNeeded();
+    snapWindowIntoBoundsIfNeeded(win);
   });
   win.on('moved', () => {
-    const newPos = ensureWindowInBounds(win);
-    if (newPos) win.setPosition(newPos.x, newPos.y);
+    snapWindowIntoBoundsIfNeeded(win);
     const [x, y] = win.getPosition();
     fs.writeFileSync(posFile, JSON.stringify({ x, y }));
   });
-  win.on('show', () => applyBounceBackIfNeeded());
+  win.on('show', () => snapWindowIntoBoundsIfNeeded(win));
 
-  screen.on('display-added', () => applyBounceBackIfNeeded());
-  screen.on('display-removed', () => applyBounceBackIfNeeded());
+  screen.on('display-added', () => snapWindowIntoBoundsIfNeeded(win));
+  screen.on('display-removed', () => snapWindowIntoBoundsIfNeeded(win));
 
   ipcMain.handle('get-window-position', () => {
     const [x, y] = win.getPosition();
