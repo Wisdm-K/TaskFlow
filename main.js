@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification } = require('electron')
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, screen } = require('electron')
 const path = require('path')
 const fs = require('fs')
 
@@ -23,6 +23,10 @@ app.commandLine.appendSwitch('disable-color-correct-rendering');
 
 let tray = null;
 let win = null;
+/** 鼠标穿透开启时轮询光标，防止 forward 未送达导致卡在穿透状态 */
+let ignoreMousePollTimer = null;
+/** 面板内容区屏幕坐标（由渲染进程同步），用于轮询时区分「透明边距」与「可点击区」 */
+let contentScreenBounds = null;
 
 function createWindow() {
   // ================= 图标处理逻辑 =================
@@ -64,7 +68,6 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'index.html'));
 
   // ================= 记住窗口位置 + 屏幕外弹回 =================
-  const { screen } = require('electron');
   const { ensureWindowInBounds } = require('./windowBounds');
   const posFile = path.join(app.getPath('userData'), 'window-pos.json');
 
@@ -155,9 +158,53 @@ function createWindow() {
     processNotifQueue();
   });
 
+  function pointInScreenRect(pt, r) {
+    return pt.x >= r.x && pt.x < r.x + r.width && pt.y >= r.y && pt.y < r.y + r.height;
+  }
+
+  ipcMain.on('content-bounds-screen', (_, bounds) => {
+    if (
+      bounds &&
+      typeof bounds.x === 'number' &&
+      typeof bounds.y === 'number' &&
+      typeof bounds.width === 'number' &&
+      typeof bounds.height === 'number'
+    ) {
+      contentScreenBounds = bounds;
+    }
+  });
+
   ipcMain.on('set-ignore-mouse', (_, ignore) => {
+    if (ignoreMousePollTimer) {
+      clearInterval(ignoreMousePollTimer);
+      ignoreMousePollTimer = null;
+    }
     if (win && !win.isDestroyed()) {
       win.setIgnoreMouseEvents(ignore, { forward: true });
+      if (ignore) {
+        ignoreMousePollTimer = setInterval(() => {
+          if (!win || win.isDestroyed()) {
+            clearInterval(ignoreMousePollTimer);
+            ignoreMousePollTimer = null;
+            return;
+          }
+          const pt = screen.getCursorScreenPoint();
+          const wb = win.getBounds();
+          const fallback = { x: wb.x, y: wb.y, width: wb.width, height: wb.height };
+          const rect = contentScreenBounds || fallback;
+          if (pointInScreenRect(pt, rect)) {
+            win.setIgnoreMouseEvents(false, { forward: true });
+            clearInterval(ignoreMousePollTimer);
+            ignoreMousePollTimer = null;
+          }
+        }, 40);
+      }
+    }
+  });
+
+  win.on('moved', () => {
+    if (win && !win.isDestroyed()) {
+      win.webContents.send('window-moved');
     }
   });
 

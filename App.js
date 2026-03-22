@@ -138,7 +138,28 @@ function App() {
   const hasModal = isAdding || isSettingsOpen || isClosing;
   useEffect(() => {
     let ignoring = false;
-    const onMouseMove = (e) => {
+    /** 边缘命中膨胀，减少边界误判；与主进程 content-bounds 一致 */
+    const hitPad = 3;
+
+    const sendContentBounds = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      ipcRenderer.send('content-bounds-screen', {
+        x: window.screenX + r.left,
+        y: window.screenY + r.top,
+        width: r.width,
+        height: r.height,
+      });
+    };
+
+    const onWindowMoved = () => {
+      sendContentBounds();
+    };
+    ipcRenderer.on('window-moved', onWindowMoved);
+
+    const onPointerMove = (e) => {
+      sendContentBounds();
       if (hasModal) {
         if (ignoring) {
           ipcRenderer.send('set-ignore-mouse', false);
@@ -149,8 +170,11 @@ function App() {
       const el = containerRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const inside = e.clientX >= rect.left && e.clientX <= rect.right
-        && e.clientY >= rect.top && e.clientY <= rect.bottom;
+      const inside =
+        e.clientX >= rect.left - hitPad &&
+        e.clientX <= rect.right + hitPad &&
+        e.clientY >= rect.top - hitPad &&
+        e.clientY <= rect.bottom + hitPad;
       if (inside && ignoring) {
         ipcRenderer.send('set-ignore-mouse', false);
         ignoring = false;
@@ -166,14 +190,27 @@ function App() {
       }
     };
     if (hasModal) ipcRenderer.send('set-ignore-mouse', false);
-    document.addEventListener('mousemove', onMouseMove);
+
+    const opts = { capture: true, passive: true };
+    document.addEventListener('pointermove', onPointerMove, opts);
+
+    let resizeObserver = null;
+    const el = containerRef.current;
+    if (el && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => sendContentBounds());
+      resizeObserver.observe(el);
+    }
+    sendContentBounds();
+
     window.addEventListener('focus', onFocus);
     return () => {
-      document.removeEventListener('mousemove', onMouseMove);
+      ipcRenderer.removeListener('window-moved', onWindowMoved);
+      document.removeEventListener('pointermove', onPointerMove, opts);
+      if (resizeObserver) resizeObserver.disconnect();
       window.removeEventListener('focus', onFocus);
       if (ignoring) ipcRenderer.send('set-ignore-mouse', false);
     };
-  }, [hasModal]);
+  }, [hasModal, adaptiveMaxHeight]);
 
   return (
     <div className="h-screen w-screen flex flex-col p-4 font-sans text-gray-800 dark:text-gray-100">
