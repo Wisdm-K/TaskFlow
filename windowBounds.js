@@ -1,8 +1,12 @@
 /**
  * 窗口边界检测模块
- * 检测窗口是否完全在可见显示器范围内，支持单屏和多屏
+ * 仅当「可见内容区域」超出屏幕时弹回。窗口总高 2200px，但实际可见的只有顶部区域
+ * 支持单屏和多屏
  */
 const { screen } = require('electron');
+
+// 核心控制区域高度：头部 86px + 少量余量，确保拖动/设置等按钮在屏幕内即可
+const VISIBLE_HEIGHT = 120;
 
 /**
  * 判断点 (px, py) 是否在任意显示器范围内
@@ -15,82 +19,49 @@ function isPointInAnyDisplay(px, py, displays) {
 }
 
 /**
- * 判断窗口是否完全在可见范围内
- * @param {number} x 窗口左上角 x
- * @param {number} y 窗口左上角 y
- * @param {number} width 窗口宽度
- * @param {number} height 窗口高度
- * @returns {boolean} true=完全在范围内，false=有部分在范围外
+ * 判断可见区域是否完全移出所有显示器
+ * 仅检测顶部 VISIBLE_HEIGHT 像素，底部透明区域伸出屏幕不触发弹回
  */
-function isWindowFullyVisible(x, y, width, height) {
+function isVisiblePartOutside(x, y, width) {
   const displays = screen.getAllDisplays();
   const corners = [
     [x, y],
     [x + width, y],
-    [x, y + height],
-    [x + width, y + height]
+    [x, y + VISIBLE_HEIGHT],
+    [x + width, y + VISIBLE_HEIGHT]
   ];
-  return corners.every(([px, py]) => isPointInAnyDisplay(px, py, displays));
+  return corners.every(([px, py]) => !isPointInAnyDisplay(px, py, displays));
 }
 
-/**
- * 将坐标限制在 [min, max] 范围内
- */
 function clamp(val, min, max) {
   return Math.max(min, Math.min(max, val));
 }
 
 /**
- * 计算将窗口弹回可见区域的新位置
- * 优先保留在窗口中心所在的显示器内；若中心已在屏幕外，则弹回主显示器
- * @param {number} x 当前 x
- * @param {number} y 当前 y
- * @param {number} width 窗口宽度
- * @param {number} height 窗口高度
- * @returns {{ x: number, y: number } | null} 若已在范围内返回 null，否则返回新坐标
+ * 将可见区域弹回主显示器的位置
  */
-function getClampedPosition(x, y, width, height) {
-  const displays = screen.getAllDisplays();
+function getClampedPosition(x, y, width) {
   const primaryDisplay = screen.getPrimaryDisplay();
-
-  const centerX = x + width / 2;
-  const centerY = y + height / 2;
-
-  // 查找包含窗口中心的显示器
-  let targetDisplay = displays.find(d => {
-    const b = d.bounds;
-    return centerX >= b.x && centerX < b.x + b.width &&
-           centerY >= b.y && centerY < b.y + b.height;
-  });
-
-  // 中心在屏幕外，使用主显示器
-  if (!targetDisplay) {
-    targetDisplay = primaryDisplay;
-  }
-
-  const b = targetDisplay.bounds;
-  const newX = clamp(x, b.x, b.x + b.width - width);
-  const newY = clamp(y, b.y, b.y + b.height - height);
-
+  const b = primaryDisplay.bounds;
+  const newX = clamp(x, b.x, Math.max(b.x, b.x + b.width - width));
+  const newY = clamp(y, b.y, Math.max(b.y, b.y + b.height - VISIBLE_HEIGHT));
   if (newX === x && newY === y) return null;
   return { x: newX, y: newY };
 }
 
 /**
- * 检查窗口位置，若超出可见区域则返回应弹回的位置
- * @param {Electron.BrowserWindow} browserWindow
- * @returns {{ x: number, y: number } | null}
+ * 仅当可见内容区域超出屏幕时弹回
  */
 function ensureWindowInBounds(browserWindow) {
   if (!browserWindow || browserWindow.isDestroyed()) return null;
   const [x, y] = browserWindow.getPosition();
-  const [width, height] = browserWindow.getSize();
-  if (isWindowFullyVisible(x, y, width, height)) return null;
-  return getClampedPosition(x, y, width, height);
+  const [width] = browserWindow.getSize();
+  if (!isVisiblePartOutside(x, y, width)) return null;
+  return getClampedPosition(x, y, width);
 }
 
 module.exports = {
-  isWindowFullyVisible,
+  isVisiblePartOutside,
   getClampedPosition,
   ensureWindowInBounds
 };
